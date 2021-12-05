@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "428438270385",
+    "project_id": "movies-watchlist-app",
+    "storage_bucket": "movies-watchlist-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:428438270385:android:e9452ed77f2718e0c20d90",
+        "android_client_info": {
+          "package_name": "com.example.movies_watchlist_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "428438270385-al66o0fi048d0cikck1bj9hmsrh7qo0f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.movies_watchlist_app",
+            "certificate_hash": "83462f3c5fa473690f5e7ccf52927f860cee4ee6"
+          }
+        },
+        {
+          "client_id": "428438270385-eaclisjfkv8oef1ohhqunt9lj6qepn91.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCP9cN2XmGV_kZE0bzi_Br72_DnXCX4cFE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "428438270385-eaclisjfkv8oef1ohhqunt9lj6qepn91.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
