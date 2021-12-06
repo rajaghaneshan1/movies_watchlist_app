@@ -1,11 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:movies_watchlist_app/auth/view/auth_screen.dart';
-import 'package:movies_watchlist_app/auth/controller/authentication_controller.dart';
 import 'package:movies_watchlist_app/home/model/movie_model.dart';
 import 'package:movies_watchlist_app/home/view/add_movie_screen.dart';
-
+import 'package:movies_watchlist_app/home/view/widgets/log_out_dialog.dart';
+import 'package:movies_watchlist_app/home/view/widgets/movie_card.dart';
 import '../../constants.dart';
 
 class MoviesListScreen extends StatefulWidget {
@@ -37,83 +36,17 @@ class _MoviesListScreenState extends State<MoviesListScreen> {
               showDialog(
                 context: context,
                 builder: (context) {
-                  return Dialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                    child: Container(
-                      padding: EdgeInsets.all(20.0),
-                      height: 200,
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20.0),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 40,
-                                backgroundColor: kRed,
-                                backgroundImage: NetworkImage(
-                                    firebaseAuth.currentUser!.photoURL ??
-                                        placeHolderImage),
-                              ),
-                              SizedBox(
-                                width: 20,
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    Text(
-                                      '${firebaseAuth.currentUser!.displayName}',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${firebaseAuth.currentUser!.email}',
-                                      style: TextStyle(color: Colors.black),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              AuthenticationController.signOut();
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AuthScreen(),
-                                ),
-                              );
-                            },
-                            style: elevatedButtonStyle,
-                            icon: const Icon(FontAwesomeIcons.signOutAlt),
-                            label: Text('Sign Out'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                  return const LogOutDialog();
                 },
               );
             },
-            icon: Icon(FontAwesomeIcons.user),
+            icon: const Icon(FontAwesomeIcons.user),
           ),
         ],
       ),
       body: SingleChildScrollView(
         controller: _scrollController,
-        physics: AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 15.0,
@@ -124,7 +57,7 @@ class _MoviesListScreenState extends State<MoviesListScreen> {
             children: [
               Text(
                 'Welcome $displayName !',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -137,6 +70,34 @@ class _MoviesListScreenState extends State<MoviesListScreen> {
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
+                      if (snapshot.data!.docs.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 50),
+                            child: Column(
+                              children: const [
+                                Text(
+                                  'It\'s empty here !',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 24,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  'Add Movies to your Watchlist by clicking the button below',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                       return ListView.builder(
                         controller: _scrollController,
                         itemCount: snapshot.data!.docs.length,
@@ -144,41 +105,11 @@ class _MoviesListScreenState extends State<MoviesListScreen> {
                         itemBuilder: (context, index) {
                           MovieModel dataModel = MovieModel.fromDocument(
                               snapshot.data!.docs[index]);
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: ListTile(
-                              dense: true,
-                              tileColor: kRed.withOpacity(0.9),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                              ),
-                              leading: Image.network(
-                                placeHolderImage,
-                              ),
-                              title: Text(
-                                dataModel.movieTitle,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              subtitle: Text(
-                                dataModel.director,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          );
+                          return MovieCard(dataModel: dataModel);
                         },
                       );
                     }
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: kRed,
-                      ),
-                    );
+                    return loadingWidget();
                   })
             ],
           ),
@@ -196,7 +127,7 @@ class _MoviesListScreenState extends State<MoviesListScreen> {
             ),
           );
         },
-        child: Icon(
+        child: const Icon(
           Icons.movie,
         ),
       ),

@@ -1,11 +1,15 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'dart:io';
 import 'dart:ui';
-
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:movies_watchlist_app/home/controller/firebase_controller.dart';
 import 'package:movies_watchlist_app/home/controller/text_validator.dart';
-
+import 'package:movies_watchlist_app/home/model/movie_model.dart';
+import 'package:uuid/uuid.dart';
 import '../../constants.dart';
 
 class AddMovieScreen extends StatefulWidget {
@@ -18,6 +22,8 @@ class AddMovieScreen extends StatefulWidget {
 class _AddMovieScreenState extends State<AddMovieScreen> {
   // late ScrollController scrollController;
   File? image;
+  String? downloadUrl, imageName;
+  String id = const Uuid().v4();
   ImagePicker picker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
@@ -34,17 +40,24 @@ class _AddMovieScreenState extends State<AddMovieScreen> {
     if (imageFile != null) {
       setState(() {
         image = File(imageFile.path);
+        imageName = imageFile.name;
       });
     }
   }
 
   Future uploadPic() async {
-    Reference _ref = firebaseStorage.ref().child('posters');
-    UploadTask uploadTask = _ref.putFile(image!);
-    String downloadUrl = await uploadTask.then(
-      (p0) => p0.ref.getDownloadURL(),
-    );
-    print(downloadUrl);
+    if (image != null) {
+      try {
+        Reference _ref = firebaseStorage.ref().child('posters/$imageName');
+        UploadTask uploadTask = _ref.putFile(image!);
+        if (uploadTask == null) return;
+        final snapshot = await uploadTask.whenComplete(() => null);
+        final urlDownload = await snapshot.ref.getDownloadURL();
+        downloadUrl = urlDownload;
+      } on FirebaseException catch (_) {
+        return null;
+      }
+    }
   }
 
   @override
@@ -113,23 +126,7 @@ class _AddMovieScreenState extends State<AddMovieScreen> {
                     cursorColor: Colors.white,
                     validator: (_) =>
                         TextValidator.checkIfEmpty(_titleController.text),
-                    decoration: InputDecoration(
-                      labelText: 'Movie Name',
-                      labelStyle: const TextStyle(color: Colors.white),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: kRed,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: kRed,
-                        ),
-                      ),
-                      errorStyle: TextStyle(color: Colors.red.shade100),
-                    ),
+                    decoration: textFieldDecoration('Movie Name'),
                   ),
                 ),
                 Padding(
@@ -141,54 +138,43 @@ class _AddMovieScreenState extends State<AddMovieScreen> {
                     cursorColor: Colors.white,
                     validator: (_) =>
                         TextValidator.checkIfEmpty(_directorController.text),
-                    decoration: InputDecoration(
-                      labelText: 'Director',
-                      labelStyle: const TextStyle(color: Colors.white),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: kRed,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: kRed,
-                        ),
-                      ),
-                      errorStyle: TextStyle(color: Colors.red.shade100),
-                    ),
+                    decoration: textFieldDecoration('Director'),
                   ),
                 ),
                 const SizedBox(
                   height: 20,
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    // if (_formKey.currentState!.validate()) {
-                    uploadPic();
-                    //   usersRef
-                    //       .doc(firebaseAuth.currentUser!.uid)
-                    //       .collection('watchlist')
-                    //       .add(
-                    //     {
-                    //       'movieTitle': _titleController.text,
-                    //       'director': _directorController.text,
-                    //       'poster': placeHolderImage,
-                    //     },
-                    //   ).then(
-                    //     (_) => Navigator.pop(context),
-                    //   );
-                    // }
-                  },
-                  style: elevatedButtonStyle,
-                  child: const Text(
-                    'Add Movie',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                Obx(
+                  () => homeController.isLoading.value
+                      ? loadingWidget()
+                      : ElevatedButton(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              homeController.isLoading.value = true;
+                              await uploadPic();
+                              FirebaseController.addMovieToFirebase(
+                                MovieModel(
+                                    id: id,
+                                    movieTitle: _titleController.text,
+                                    director: _directorController.text,
+                                    poster: downloadUrl),
+                              ).then(
+                                (_) {
+                                  homeController.isLoading.value = false;
+                                  Navigator.pop(context);
+                                },
+                              );
+                            }
+                          },
+                          style: elevatedButtonStyle,
+                          child: const Text(
+                            'Add Movie',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -198,11 +184,14 @@ class _AddMovieScreenState extends State<AddMovieScreen> {
     );
   }
 
+  
+
   @override
   void dispose() {
     // scrollController.dispose();
     _titleController.dispose();
     _directorController.dispose();
+    homeController.isLoading.value = false;
     super.dispose();
   }
 }

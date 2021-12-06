@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:get/get.dart';
 import 'package:movies_watchlist_app/auth/controller/authentication_controller.dart';
 import 'package:movies_watchlist_app/constants.dart';
 import 'package:movies_watchlist_app/home/view/movies_list_screen.dart';
@@ -43,39 +44,50 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 50.0),
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  primary: kRed,
-                  padding: const EdgeInsets.all(12.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                ),
-                onPressed: () {
-                  AuthenticationController.signInWithGoogle().then((user) {
-                    if (user != null) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MoviesListScreen(),
+              child: Obx(
+                () => homeController.isLoading.value
+                    ? loadingWidget()
+                    : ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          primary: kRed,
+                          padding: const EdgeInsets.all(12.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30.0),
+                          ),
                         ),
-                      );
-                    }
-                  });
-                },
-                icon: const Icon(FontAwesomeIcons.google),
-                label: const Text(
-                  'Sign in with Google',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                        onPressed: () {
+                          homeController.isLoading.value = true;
+                          AuthenticationController.signInWithGoogle()
+                              .then((user) {
+                            if (user != null) {
+                              homeController.isLoading.value = false;
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const MoviesListScreen(),
+                                ),
+                              );
+                            }
+                          });
+                        },
+                        icon: const Icon(FontAwesomeIcons.google),
+                        label: const Text(
+                          'Sign in with Google',
+                          style: buttonTextStyle,
+                        ),
+                      ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    homeController.isLoading.value = false;
+    super.dispose();
   }
 }
